@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 Gem::Specification.new do |spec|
-  spec.name = 'simple_result'
-  spec.version = '1.0.0'
-  spec.authors = ['Your Name']
+  spec.name = 'simple-result'
+  spec.version = SimpleResult::VERSION
+  spec.authors = ['Lucian Ghinda']
   spec.email = ['lucian@shortruby.com']
 
   spec.summary = 'A simple response monad implementation'

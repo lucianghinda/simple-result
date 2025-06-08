@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    simple_result (1.0.0)
+    simple-result (0.1.0)
       zeitwerk (~> 2.6)
 
 GEM
@@ -90,7 +90,7 @@ DEPENDENCIES
   rubocop-performance
   rubocop-rake
   rubocop-rubycw
-  simple_result!
+  simple-result!
 
 BUNDLED WITH
    2.6.9

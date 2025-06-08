@@ -1,6 +1,8 @@
 # SimpleResult
 
-A simple, idiomatic Ruby implementation of a response monad for handling success and failure states inspired by https://github.com/maxveldink/sorbet-result.
+A simple, idiomatic Ruby implementation of a response monad (`Success` or `Failure`) for handling success and failure states inspired by https://github.com/maxveldink/sorbet-result.
+
+This is a very simple implementation kept on purpose to be less than 100 LOC (currently at 60) and with no other dependencies than `zeitwerk`.
 
 ## Installation
 
@@ -68,19 +70,19 @@ def present(value)
 end
 
 validate("hello")
-.and_then { |value| transform(value) }
-.and_then { |value| present(value) }
-# => "HELLO"
+  .and_then { |value| transform(value) }
+  .and_then { |value| present(value) }
+# => "HELLO!"
 
 # Or since Ruby 3.4 you can also use the implicit `it` block parameter
 validate("hello")
-.and_then { transform(it) }
-.and_then { present(it) }
+  .and_then { transform(it) }
+  .and_then { present(it) }
 
 # or if you prefer to write without paranthesis in a more DSL like style:
 validate("hello")
-.and_then { transform it }
-.and_then { present it }
+  .and_then { transform it }
+  .and_then { present it }
 ```
 
 ### Error Handling
@@ -123,6 +125,12 @@ Run RuboCop:
 
 ```bash
 rubocop
+```
+
+Start an interactive console:
+
+```bash
+bin/console
 ```
 
 ## License
