@@ -147,46 +147,46 @@ class TestSimpleResult < Minitest::Test
   # Inspect method tests for Success
   def test_success_inspect_with_nil_payload
     success = Success()
-    expected = "#<data SimpleResult::Success payload=nil>"
-    
+    expected = '#<data SimpleResult::Success payload=nil>'
+
     assert_equal expected, success.inspect
   end
 
   def test_success_inspect_with_simple_payload
-    success = Success("hello")
-    expected = "#<data SimpleResult::Success payload=\"hello\">"
-    
+    success = Success('hello')
+    expected = '#<data SimpleResult::Success payload="hello">'
+
     assert_equal expected, success.inspect
   end
 
   def test_success_inspect_with_complex_payload
-    payload = { key: "value", number: 42 }
+    payload = { key: 'value', number: 42 }
     success = Success(payload)
     expected = "#<data SimpleResult::Success payload=#{payload.inspect}>"
-    
+
     assert_equal expected, success.inspect
   end
 
   # Inspect method tests for Failure
   def test_failure_inspect_with_nil_error
     failure = Failure()
-    expected = "#<data SimpleResult::Failure error=nil>"
-    
+    expected = '#<data SimpleResult::Failure error=nil>'
+
     assert_equal expected, failure.inspect
   end
 
   def test_failure_inspect_with_simple_error
-    failure = Failure("error message")
-    expected = "#<data SimpleResult::Failure error=\"error message\">"
-    
+    failure = Failure('error message')
+    expected = '#<data SimpleResult::Failure error="error message">'
+
     assert_equal expected, failure.inspect
   end
 
   def test_failure_inspect_with_complex_error
-    error = StandardError.new("complex error")
+    error = StandardError.new('complex error')
     failure = Failure(error)
     expected = "#<data SimpleResult::Failure error=#{error.inspect}>"
-    
+
     assert_equal expected, failure.inspect
   end
 
@@ -195,17 +195,17 @@ class TestSimpleResult < Minitest::Test
     success = Success()
     pp = StringIO.new
     success.pretty_print(PrettyPrint.new(pp))
-    expected = "#<data SimpleResult::Success payload=nil>"
-    
+    expected = '#<data SimpleResult::Success payload=nil>'
+
     assert_equal expected, pp.string
   end
 
   def test_success_pretty_print_with_simple_payload
-    success = Success("hello")
+    success = Success('hello')
     pp = StringIO.new
     success.pretty_print(PrettyPrint.new(pp))
-    expected = "#<data SimpleResult::Success payload=\"hello\">"
-    
+    expected = '#<data SimpleResult::Success payload="hello">'
+
     assert_equal expected, pp.string
   end
 
@@ -215,7 +215,7 @@ class TestSimpleResult < Minitest::Test
     pp = StringIO.new
     success.pretty_print(PrettyPrint.new(pp))
     expected = "#<data SimpleResult::Success payload=#{payload.inspect}>"
-    
+
     assert_equal expected, pp.string
   end
 
@@ -224,27 +224,27 @@ class TestSimpleResult < Minitest::Test
     failure = Failure()
     pp = StringIO.new
     failure.pretty_print(PrettyPrint.new(pp))
-    expected = "#<data SimpleResult::Failure error=nil>"
-    
+    expected = '#<data SimpleResult::Failure error=nil>'
+
     assert_equal expected, pp.string
   end
 
   def test_failure_pretty_print_with_simple_error
-    failure = Failure("error message")
+    failure = Failure('error message')
     pp = StringIO.new
     failure.pretty_print(PrettyPrint.new(pp))
-    expected = "#<data SimpleResult::Failure error=\"error message\">"
-    
+    expected = '#<data SimpleResult::Failure error="error message">'
+
     assert_equal expected, pp.string
   end
 
   def test_failure_pretty_print_with_complex_error
-    error = { type: "validation", details: ["field required"] }
+    error = { type: 'validation', details: ['field required'] }
     failure = Failure(error)
     pp = StringIO.new
     failure.pretty_print(PrettyPrint.new(pp))
     expected = "#<data SimpleResult::Failure error=#{error.inspect}>"
-    
+
     assert_equal expected, pp.string
   end
 end
