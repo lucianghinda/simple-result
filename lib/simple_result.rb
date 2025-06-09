@@ -55,6 +55,3 @@ module SimpleResult
     def pretty_print(pp) = pp.text "#<data #{self.class.name} error=#{error.inspect}>"
   end
 end
-
-def Success(payload = nil) = SimpleResult::Success.new(payload) # rubocop:disable Naming/MethodName -- These are helpers methods defined specifically like this to look similar with the classes
-def Failure(error = nil) = SimpleResult::Failure.new(error:) # rubocop:disable Naming/MethodName -- These are helpers methods defined specifically like this to look similar with the classes

@@ -18,34 +18,46 @@ gem 'simple_result'
 require 'simple_result'
 ```
 
-## Basic Usage Patterns
+## Helper Methods vs Namespaced Classes
 
-### Creating Results
+The gem provides two ways to create results:
+
+### Option 1: Helper Methods (Recommended)
+
+Include `SimpleResult::Helpers` to access the convenient `Success()` and `Failure()` helper methods:
 
 ```ruby
-# Success with payload
-success = Success("Hello, World!")
-success.success?  # => true
-success.payload   # => "Hello, World!"
-
-# Success without payload (blank)
-empty_success = Success()
-empty_success.payload  # => nil
-
-# Failure with error
-failure = Failure("Something went wrong")
-failure.failure?  # => true
-failure.error     # => "Something went wrong"
-
-# Failure without error (blank)
-empty_failure = Failure()
-empty_failure.error  # => nil
+class MyService
+  include SimpleResult::Helpers
+  
+  def call
+    # Success with payload
+    success = Success("Hello, World!")
+    success.success?  # => true
+    success.payload   # => "Hello, World!"
+    
+    # Success without payload (blank)
+    empty_success = Success()
+    empty_success.payload  # => nil
+    
+    # Failure with error
+    failure = Failure("Something went wrong")
+    failure.failure?  # => true
+    failure.error     # => "Something went wrong"
+    
+    # Failure without error (blank)
+    empty_failure = Failure()
+    empty_failure.error  # => nil
+  end
+end
 ```
 
-### Alternative Namespaced Usage
+### Option 2: Namespaced Classes
+
+You can use the full namespaced classes without including any modules:
 
 ```ruby
-# You can also use the full namespaced classes
+# Direct class usage
 success = SimpleResult::Success.new("data")
 failure = SimpleResult::Failure.new(error: "error message")
 
@@ -59,42 +71,59 @@ SimpleResult::Failure.blank  # => Failure with nil error
 The `and_then` method allows chaining operations that only execute on success:
 
 ```ruby
-# Success case - all operations execute
-Success("hello")
-  .and_then { |value| value.upcase }
-  .and_then { |value| "#{value}!" }
-# => "HELLO!"
-
-# Failure case - operations are skipped
-Failure("error")
-  .and_then { |value| value.upcase }
-  .and_then { |value| "#{value}!" }
-# => Failure("error")
+class DataProcessor
+  include SimpleResult::Helpers
+  
+  def process
+    # Success case - all operations execute
+    Success("hello")
+      .and_then { |value| value.upcase }
+      .and_then { |value| "#{value}!" }
+    # => "HELLO!"
+    
+    # Failure case - operations are skipped
+    Failure("error")
+      .and_then { |value| value.upcase }
+      .and_then { |value| "#{value}!" }
+    # => Failure("error")
+  end
+end
 ```
 
 ### Service-Style Chaining
 
 ```ruby
-def validate_input(value)
-  return Failure("Input cannot be empty") if value.nil? || value.empty?
-  Success(value)
+class UserProcessor
+  include SimpleResult::Helpers
+  
+  def process(input)
+    validate_input(input)
+      .and_then { |value| transform_data(value) }
+      .and_then { |value| save_data(value) }
+  end
+  
+  private
+  
+  def validate_input(value)
+    return Failure("Input cannot be empty") if value.nil? || value.empty?
+    Success(value)
+  end
+
+  def transform_data(value)
+    transformed = value.upcase.strip
+    Success(transformed)
+  end
+
+  def save_data(value)
+    # Simulate save operation
+    return Failure("Database error") if value.length > 100
+    Success("Saved: #{value}")
+  end
 end
 
-def transform_data(value)
-  transformed = value.upcase.strip
-  Success(transformed)
-end
-
-def save_data(value)
-  # Simulate save operation
-  return Failure("Database error") if value.length > 100
-  Success("Saved: #{value}")
-end
-
-# Chain operations
-result = validate_input("hello")
-  .and_then { |value| transform_data(value) }
-  .and_then { |value| save_data(value) }
+# Usage
+processor = UserProcessor.new
+result = processor.process("hello")
 
 # Check final result
 if result.success?
@@ -107,10 +136,18 @@ end
 ### Ruby 3.4 Implicit Block Parameter
 
 ```ruby
-# Using implicit 'it' parameter (Ruby 3.4+)
-validate_input("hello")
-  .and_then { transform_data(it) }
-  .and_then { save_data(it) }
+class ModernProcessor
+  include SimpleResult::Helpers
+  
+  def process(input)
+    # Using implicit 'it' parameter (Ruby 3.4+)
+    validate_input(input)
+      .and_then { transform_data(it) }
+      .and_then { save_data(it) }
+  end
+  
+  # ... other methods
+end
 ```
 
 ## Error Handling with `on_error`
@@ -118,17 +155,33 @@ validate_input("hello")
 The `on_error` method executes a block only when the result is a failure:
 
 ```ruby
-# Success - block not executed
-Success("data").on_error { |error| puts "Error: #{error}" }
-# => Returns Success("data"), nothing printed
+class ErrorHandler
+  include SimpleResult::Helpers
+  
+  def process
+    # Success - block not executed
+    Success("data").on_error { |error| puts "Error: #{error}" }
+    # => Returns Success("data"), nothing printed
 
-# Failure - block executed
-Failure("oops").on_error { |error| puts "Error: #{error}" }
-# => Prints "Error: oops", returns Failure("oops")
+    # Failure - block executed
+    Failure("oops").on_error { |error| puts "Error: #{error}" }
+    # => Prints "Error: oops", returns Failure("oops")
 
-# Practical usage for logging
-result = some_operation()
-  .on_error { |error| logger.error("Operation failed: #{error}") }
+    # Practical usage for logging
+    some_operation()
+      .on_error { |error| logger.error("Operation failed: #{error}") }
+  end
+  
+  private
+  
+  def some_operation
+    # ... implementation
+  end
+  
+  def logger
+    # ... logger instance
+  end
+end
 ```
 
 ## Fallback Values with `payload_or_fallback`
@@ -136,21 +189,33 @@ result = some_operation()
 Use this method to provide default values:
 
 ```ruby
-# Success with value - returns payload
-Success("actual_value").payload_or_fallback { "default" }
-# => "actual_value"
+class UserService
+  include SimpleResult::Helpers
+  
+  def get_user_name(user_id)
+    # Success with value - returns payload
+    Success("John").payload_or_fallback { "Anonymous" }
+    # => "John"
 
-# Success with nil - returns fallback
-Success(nil).payload_or_fallback { "default" }
-# => "default"
+    # Success with nil - returns fallback
+    Success(nil).payload_or_fallback { "Anonymous" }
+    # => "Anonymous"
 
-# Failure - always returns fallback
-Failure("error").payload_or_fallback { "default" }
-# => "default"
+    # Failure - always returns fallback
+    Failure("User not found").payload_or_fallback { "Anonymous" }
+    # => "Anonymous"
 
-# Practical usage
-user_name = fetch_user()
-  .payload_or_fallback { "Anonymous" }
+    # Practical usage
+    user_name = fetch_user(user_id)
+      .payload_or_fallback { "Anonymous" }
+  end
+  
+  private
+  
+  def fetch_user(user_id)
+    # ... implementation
+  end
+end
 ```
 
 ## Error Safety
@@ -158,11 +223,17 @@ user_name = fetch_user()
 The gem prevents accessing inappropriate attributes:
 
 ```ruby
-success = Success("data")
-success.error  # => Raises SimpleResult::ResponseError
+class SafetyDemo
+  include SimpleResult::Helpers
+  
+  def demonstrate_safety
+    success = Success("data")
+    success.error  # => Raises SimpleResult::ResponseError
 
-failure = Failure("error")
-failure.payload  # => Raises SimpleResult::ResponseError
+    failure = Failure("error")
+    failure.payload  # => Raises SimpleResult::ResponseError
+  end
+end
 ```
 
 ## Inspection and Debugging
@@ -170,11 +241,19 @@ failure.payload  # => Raises SimpleResult::ResponseError
 Results provide clear inspection methods:
 
 ```ruby
-Success("hello").inspect
-# => "#<data SimpleResult::Success payload=\"hello\">"
+class DebugService
+  include SimpleResult::Helpers
+  
+  def debug_results
+    success = Success("hello")
+    puts success.inspect
+    # => "#<data SimpleResult::Success payload=\"hello\">"
 
-Failure("error").inspect  
-# => "#<data SimpleResult::Failure error=\"error\">"
+    failure = Failure("error")
+    puts failure.inspect  
+    # => "#<data SimpleResult::Failure error=\"error\">"
+  end
+end
 ```
 
 ## Common Usage Patterns
@@ -183,6 +262,8 @@ Failure("error").inspect
 
 ```ruby
 class UserCreationService
+  include SimpleResult::Helpers
+  
   def call(params)
     validate_params(params)
       .and_then { |validated| create_user(validated) }
@@ -208,34 +289,114 @@ class UserCreationService
     return Failure("Email service unavailable") unless email_service_available?
     Success(user)
   end
+  
+  def log_error(error)
+    # ... logging implementation
+  end
+  
+  def valid_email?(email)
+    # ... email validation
+  end
+  
+  def email_service_available?
+    # ... service check
+  end
 end
 ```
 
 ### API Response Handling
 
 ```ruby
-def fetch_user_data(user_id)
-  validate_user_id(user_id)
-    .and_then { |id| make_api_request(id) }
-    .and_then { |response| parse_response(response) }
-    .and_then { |data| transform_data(data) }
-    .on_error { |error| log_api_error(error) }
+class ApiClient
+  include SimpleResult::Helpers
+  
+  def fetch_user_data(user_id)
+    validate_user_id(user_id)
+      .and_then { |id| make_api_request(id) }
+      .and_then { |response| parse_response(response) }
+      .and_then { |data| transform_data(data) }
+      .on_error { |error| log_api_error(error) }
+  end
+
+  private
+  
+  def validate_user_id(user_id)
+    return Failure("Invalid user ID") unless user_id.is_a?(Integer) && user_id > 0
+    Success(user_id)
+  end
+  
+  def make_api_request(id)
+    # ... API request implementation
+    Success(response_data)
+  end
+  
+  def parse_response(response)
+    # ... parsing logic
+    Success(parsed_data)
+  end
+  
+  def transform_data(data)
+    # ... transformation logic
+    Success(transformed_data)
+  end
+  
+  def log_api_error(error)
+    # ... logging implementation
+  end
+  
+  def default_user_data
+    # ... default data
+  end
 end
 
 # Usage
-result = fetch_user_data(123)
-response_data = result.payload_or_fallback { default_user_data }
+api_client = ApiClient.new
+result = api_client.fetch_user_data(123)
+response_data = result.payload_or_fallback { api_client.send(:default_user_data) }
 ```
 
 ### File Processing
 
 ```ruby
-def process_file(file_path)
-  validate_file_exists(file_path)
-    .and_then { |path| read_file(path) }
-    .and_then { |content| parse_content(content) }
-    .and_then { |data| process_data(data) }
-    .and_then { |result| save_result(result) }
+class FileProcessor
+  include SimpleResult::Helpers
+  
+  def process_file(file_path)
+    validate_file_exists(file_path)
+      .and_then { |path| read_file(path) }
+      .and_then { |content| parse_content(content) }
+      .and_then { |data| process_data(data) }
+      .and_then { |result| save_result(result) }
+  end
+  
+  private
+  
+  def validate_file_exists(file_path)
+    return Failure("File not found") unless File.exist?(file_path)
+    Success(file_path)
+  end
+  
+  def read_file(path)
+    content = File.read(path)
+    Success(content)
+  rescue => e
+    Failure("Failed to read file: #{e.message}")
+  end
+  
+  def parse_content(content)
+    # ... parsing logic
+    Success(parsed_data)
+  end
+  
+  def process_data(data)
+    # ... processing logic
+    Success(processed_data)
+  end
+  
+  def save_result(result)
+    # ... save logic
+    Success("File processed successfully")
+  end
 end
 ```
 
@@ -250,12 +411,13 @@ end
 
 ## When to Use SimpleResult
 
-- Service objects that can fail
+- Service objects that can fail (include `SimpleResult::Helpers`)
 - API integrations with multiple steps
-- Data processing pipelines
+- Data processing pipelines  
 - File operations
 - Any operation where you want explicit success/failure handling
 - When you want to avoid exception-based control flow
+- Classes that need clean, readable success/failure chains
 
 ## When NOT to Use SimpleResult
 
@@ -263,3 +425,18 @@ end
 - When exceptions are more appropriate (truly exceptional cases)
 - Performance-critical code where the overhead isn't justified
 - When working with code that expects exceptions
+- Simple scripts or one-off operations where the include overhead isn't worth it
+
+## Usage Recommendations
+
+### For Helper Methods (Recommended)
+- Use `include SimpleResult::Helpers` in service classes, processors, or any class that frequently creates Success/Failure objects
+- Provides clean, readable `Success()` and `Failure()` syntax
+- Best for classes with multiple methods that return results
+
+### For Namespaced Classes
+- Use `SimpleResult::Success.new()` and `SimpleResult::Failure.new()` when:
+  - You only need results occasionally in a class
+  - You want to avoid including modules
+  - You're working in a more functional style
+  - You need explicit class references for clarity

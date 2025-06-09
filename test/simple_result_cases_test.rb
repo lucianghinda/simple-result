@@ -6,6 +6,7 @@ require 'prettyprint'
 require_relative '../lib/simple_result'
 
 class SimpleResultCasesTest < Minitest::Test
+  include SimpleResult::Helpers
   def test_success_inspect_with_nil_payload
     success = Success()
     expected = '#<data SimpleResult::Success payload=nil>'

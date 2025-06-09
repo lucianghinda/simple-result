@@ -4,6 +4,7 @@ require 'minitest/autorun'
 require_relative '../lib/simple_result'
 
 class SimpleResultTest < Minitest::Test
+  include SimpleResult::Helpers
   def test_success_helper_method
     success = Success('hello')
 

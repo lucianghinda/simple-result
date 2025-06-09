@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    simple-result (0.1.0)
+    simple-result (0.2.0)
       zeitwerk (~> 2.6)
 
 GEM
