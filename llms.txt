@@ -1,0 +1,265 @@
+# SimpleResult - LLM Usage Guide
+
+SimpleResult is a lightweight Ruby gem (< 100 LOC) that implements a response monad pattern for handling success and failure states. It provides an idiomatic way to handle operations that can succeed or fail without using exceptions for control flow.
+
+## Core Concepts
+
+The gem provides two main result types:
+- `Success`: Represents a successful operation with a payload
+- `Failure`: Represents a failed operation with an error
+
+## Installation and Setup
+
+```ruby
+# Add to Gemfile
+gem 'simple_result'
+
+# In your code
+require 'simple_result'
+```
+
+## Basic Usage Patterns
+
+### Creating Results
+
+```ruby
+# Success with payload
+success = Success("Hello, World!")
+success.success?  # => true
+success.payload   # => "Hello, World!"
+
+# Success without payload (blank)
+empty_success = Success()
+empty_success.payload  # => nil
+
+# Failure with error
+failure = Failure("Something went wrong")
+failure.failure?  # => true
+failure.error     # => "Something went wrong"
+
+# Failure without error (blank)
+empty_failure = Failure()
+empty_failure.error  # => nil
+```
+
+### Alternative Namespaced Usage
+
+```ruby
+# You can also use the full namespaced classes
+success = SimpleResult::Success.new("data")
+failure = SimpleResult::Failure.new(error: "error message")
+
+# Blank methods
+SimpleResult::Success.blank  # => Success with nil payload
+SimpleResult::Failure.blank  # => Failure with nil error
+```
+
+## Method Chaining with `and_then`
+
+The `and_then` method allows chaining operations that only execute on success:
+
+```ruby
+# Success case - all operations execute
+Success("hello")
+  .and_then { |value| value.upcase }
+  .and_then { |value| "#{value}!" }
+# => "HELLO!"
+
+# Failure case - operations are skipped
+Failure("error")
+  .and_then { |value| value.upcase }
+  .and_then { |value| "#{value}!" }
+# => Failure("error")
+```
+
+### Service-Style Chaining
+
+```ruby
+def validate_input(value)
+  return Failure("Input cannot be empty") if value.nil? || value.empty?
+  Success(value)
+end
+
+def transform_data(value)
+  transformed = value.upcase.strip
+  Success(transformed)
+end
+
+def save_data(value)
+  # Simulate save operation
+  return Failure("Database error") if value.length > 100
+  Success("Saved: #{value}")
+end
+
+# Chain operations
+result = validate_input("hello")
+  .and_then { |value| transform_data(value) }
+  .and_then { |value| save_data(value) }
+
+# Check final result
+if result.success?
+  puts result.payload  # => "Saved: HELLO"
+else
+  puts "Error: #{result.error}"
+end
+```
+
+### Ruby 3.4 Implicit Block Parameter
+
+```ruby
+# Using implicit 'it' parameter (Ruby 3.4+)
+validate_input("hello")
+  .and_then { transform_data(it) }
+  .and_then { save_data(it) }
+```
+
+## Error Handling with `on_error`
+
+The `on_error` method executes a block only when the result is a failure:
+
+```ruby
+# Success - block not executed
+Success("data").on_error { |error| puts "Error: #{error}" }
+# => Returns Success("data"), nothing printed
+
+# Failure - block executed
+Failure("oops").on_error { |error| puts "Error: #{error}" }
+# => Prints "Error: oops", returns Failure("oops")
+
+# Practical usage for logging
+result = some_operation()
+  .on_error { |error| logger.error("Operation failed: #{error}") }
+```
+
+## Fallback Values with `payload_or_fallback`
+
+Use this method to provide default values:
+
+```ruby
+# Success with value - returns payload
+Success("actual_value").payload_or_fallback { "default" }
+# => "actual_value"
+
+# Success with nil - returns fallback
+Success(nil).payload_or_fallback { "default" }
+# => "default"
+
+# Failure - always returns fallback
+Failure("error").payload_or_fallback { "default" }
+# => "default"
+
+# Practical usage
+user_name = fetch_user()
+  .payload_or_fallback { "Anonymous" }
+```
+
+## Error Safety
+
+The gem prevents accessing inappropriate attributes:
+
+```ruby
+success = Success("data")
+success.error  # => Raises SimpleResult::ResponseError
+
+failure = Failure("error")
+failure.payload  # => Raises SimpleResult::ResponseError
+```
+
+## Inspection and Debugging
+
+Results provide clear inspection methods:
+
+```ruby
+Success("hello").inspect
+# => "#<data SimpleResult::Success payload=\"hello\">"
+
+Failure("error").inspect  
+# => "#<data SimpleResult::Failure error=\"error\">"
+```
+
+## Common Usage Patterns
+
+### Service Objects
+
+```ruby
+class UserCreationService
+  def call(params)
+    validate_params(params)
+      .and_then { |validated| create_user(validated) }
+      .and_then { |user| send_welcome_email(user) }
+      .on_error { |error| log_error(error) }
+  end
+
+  private
+
+  def validate_params(params)
+    return Failure("Email required") unless params[:email]
+    return Failure("Invalid email") unless valid_email?(params[:email])
+    Success(params)
+  end
+
+  def create_user(params)
+    user = User.new(params)
+    return Failure("User creation failed") unless user.save
+    Success(user)
+  end
+
+  def send_welcome_email(user)
+    return Failure("Email service unavailable") unless email_service_available?
+    Success(user)
+  end
+end
+```
+
+### API Response Handling
+
+```ruby
+def fetch_user_data(user_id)
+  validate_user_id(user_id)
+    .and_then { |id| make_api_request(id) }
+    .and_then { |response| parse_response(response) }
+    .and_then { |data| transform_data(data) }
+    .on_error { |error| log_api_error(error) }
+end
+
+# Usage
+result = fetch_user_data(123)
+response_data = result.payload_or_fallback { default_user_data }
+```
+
+### File Processing
+
+```ruby
+def process_file(file_path)
+  validate_file_exists(file_path)
+    .and_then { |path| read_file(path) }
+    .and_then { |content| parse_content(content) }
+    .and_then { |data| process_data(data) }
+    .and_then { |result| save_result(result) }
+end
+```
+
+## Key Benefits
+
+1. **Explicit Error Handling**: Makes success/failure states explicit in the type system
+2. **Composable**: Chain operations easily with `and_then`
+3. **Short-circuiting**: Failed operations automatically skip subsequent steps
+4. **No Exceptions**: Avoids using exceptions for control flow
+5. **Lightweight**: Minimal dependencies and small codebase
+6. **Readable**: Clear, intention-revealing code
+
+## When to Use SimpleResult
+
+- Service objects that can fail
+- API integrations with multiple steps
+- Data processing pipelines
+- File operations
+- Any operation where you want explicit success/failure handling
+- When you want to avoid exception-based control flow
+
+## When NOT to Use SimpleResult
+
+- Simple operations that rarely fail
+- When exceptions are more appropriate (truly exceptional cases)
+- Performance-critical code where the overhead isn't justified
+- When working with code that expects exceptions
