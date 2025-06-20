@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary = 'A simple response monad implementation'
   spec.description = 'A one file less than 100LOC, idiomatic Ruby implementation' \
                      'of a response monad for handling success and failure states'
-  spec.homepage = 'https://github.com/lucianghinda/simple_result'
+  spec.homepage = 'https://github.com/lucianghinda/simple-result'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 3.4.4'
 
