@@ -16,10 +16,67 @@ gem 'simple_result'
 
 The recommended usage is to use the `Success` and `Failure` helpers to create responses. You can also use the scoped classes 'SimpleResult::Success' and 'SimpleResult::Failure' if you want.
 
+### Using Helpers
+
+```ruby
+require 'simple_result'
+
+class MyObject
+  include SimpleResult::Helpers
+
+  def initialize(value)
+    @value = value
+  end
+
+  def double
+    Success(@value * 2)
+  end
+end
+
+object = MyObject.new(5)
+result = object.double
+
+result.success? # => true
+result.payload  # => 10
+
+result = object.double.and_then { |value| value + 1 }
+
+result.success? # => true
+result.payload  # => 11
+```
+
+### Without Helpers
+
+```ruby
+require 'simple_result'
+
+class MyObject
+  def initialize(value)
+    @value = value
+  end
+
+  def double
+    SimpleResult::Success.new(@value * 2)
+  end
+end
+
+object = MyObject.new(5)
+result = object.double
+
+result.success? # => true
+result.payload  # => 10
+
+result = object.double.and_then { |value| value + 1 }
+
+result.success? # => true
+result.payload  # => 11
+```
+
 ### Basic Usage
 
 ```ruby
 require 'simple_result'
+include SimpleResult::Helpers
 
 success = Success("Hello, World!")
 success.success? # => true
